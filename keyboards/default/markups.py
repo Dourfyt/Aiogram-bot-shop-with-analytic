@@ -1,4 +1,4 @@
-from aiogram.types import ReplyKeyboardMarkup
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 back_message = '👈 Назад'
 all_right_message = '✅ Все верно'
@@ -32,4 +32,9 @@ def submit_markup():
     markup.row(cancel_message, all_right_message)
 
     return markup
+
+def wish_markup():
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
+    keyboard.add("Нет пожеланий")
+    return keyboard
 

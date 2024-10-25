@@ -5,4 +5,5 @@ class CheckoutState(StatesGroup):
     check_cart = State()
     name = State()
     address = State()
+    wish = State()
     confirm = State()

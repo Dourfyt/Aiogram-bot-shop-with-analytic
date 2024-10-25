@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: my-python-app
+    command: python app.py  # или другая команда для запуска твоего приложения
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"  # Пример порта, на котором будет работать твое приложение
+    depends_on:
+      - redis  # Указываем зависимость от Redis
+
+  redis:
+    image: "redis:alpine"
+    container_name: redis-db
+    ports:
+      - "6379:6379"  # Порт Redis

@@ -1,3 +1,4 @@
+from datetime import datetime
 from filters import IsUser
 from aiogram.types import Message
 from aiogram.dispatcher import FSMContext
@@ -5,9 +6,10 @@ from aiogram.types.chat import ChatActions
 from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from aiogram.types import CallbackQuery
 import logging
+from utils.tasks.mail import *
 
 from loader import db, dp, bot
-from .menu import cart
+from .menu import cart, user_menu
 from keyboards.inline.products_from_cart import product_markup
 from keyboards.inline.products_from_catalog import product_cb
 from states import CheckoutState
@@ -31,7 +33,7 @@ async def process_cart(message: Message, state: FSMContext):
 
         order_cost = 0
 
-        for _, idx, count_in_cart in cart_data:
+        for _, idx, count_in_cart, _ in cart_data:
 
             product = db.fetchone('SELECT * FROM products WHERE idx=?', (idx,))
 
@@ -40,7 +42,7 @@ async def process_cart(message: Message, state: FSMContext):
                 db.query('DELETE FROM cart WHERE idx=?', (idx,))
 
             else:
-                _, title, body, image, price, _ = product
+                _, title, body, image, price, _, _, _ = product
                 order_cost += price
 
                 async with state.proxy() as data:
@@ -113,7 +115,6 @@ async def product_callback_handler(query: CallbackQuery, callback_data: dict,
 
 @dp.message_handler(IsUser(), text='📦 Оформить заказ')
 async def process_checkout(message: Message, state: FSMContext):
-
     await CheckoutState.check_cart.set()
     await checkout(message, state)
 
@@ -129,6 +130,7 @@ async def checkout(message, state):
             tp = count_in_cart * price
             answer += f'<b>{title}</b> * {count_in_cart}шт. = {tp}₽\n'
             total_price += tp
+        data['total_price'] = total_price
 
     await message.answer(f'{answer}\nОбщая сумма заказа: {total_price}₽.',
                          reply_markup=check_markup())
@@ -178,7 +180,7 @@ async def process_name(message: Message, state: FSMContext):
         else:
 
             await CheckoutState.next()
-            await message.answer('Укажите свой адрес места жительства.',
+            await message.answer('Пожалуйста, укажите Ваши контактные данные.',
                                  reply_markup=back_markup())
 
 
@@ -198,6 +200,15 @@ async def process_address(message: Message, state: FSMContext):
 
     async with state.proxy() as data:
         data['address'] = message.text
+
+    await message.answer("Введите пожелания по заказу", reply_markup=wish_markup())
+    await CheckoutState.next()
+
+@dp.message_handler(IsUser(), state=CheckoutState.wish)
+async def process_address(message: Message, state: FSMContext):
+
+    async with state.proxy() as data:
+        data['wish'] = message.text
 
     await confirm(message)
     await CheckoutState.next()
@@ -223,7 +234,7 @@ async def process_confirm(message: Message, state: FSMContext):
     await CheckoutState.address.set()
 
     async with state.proxy() as data:
-        await message.answer('Изменить адрес с <b>' + data['address'] + '</b>?',
+        await message.answer('Изменить контактные данные с <b>' + data['address'] + '</b>?',
                              reply_markup=back_markup())
 
 
@@ -238,18 +249,24 @@ async def process_confirm(message: Message, state: FSMContext):
 
     async with state.proxy() as data:
         cid = message.chat.id
+        username = message.from_user.username
         products = [idx + '=' + str(quantity)
                     for idx, quantity in db.fetchall('''SELECT idx, quantity FROM cart
         WHERE cid=?''', (cid,))]
+        razdel = [str(razdel[0]) for razdel in db.fetchall('''SELECT razdel FROM cart WHERE cid=?''', (cid,))]
 
-        db.query('INSERT INTO orders VALUES (?, ?, ?, ?)',
-                 (cid, data['name'], data['address'], ' '.join(products)))
+        db.query('INSERT INTO orders VALUES (?, ?, ?, ?, ?, ?, ?)',
+                 (cid, data['name'], data['address'], ' '.join(products), datetime.now().isoformat(), data["wish"], ' '.join(razdel),))
 
         db.query('DELETE FROM cart WHERE cid=?', (cid,))
 
         await message.answer(
-            'Ок! Ваш заказ уже в пути 🚀\nИмя: <b>' + data[
-                'name'] + '</b>\nАдрес: <b>' + data['address'] + '</b>',
-            reply_markup=markup)
-
+            'Ок! Ваш заказ уже выполняется  🚀\nИмя: <b>' + data['name'] + '</b>\nКонтактные данные: <b>' + data['address'] + '</b>\nПожелания: <b>' + data['wish'] + '</b>',
+            reply_markup=markup
+        )
+        Bot = await bot.get_me()
+        bot_name, bot_username = Bot.first_name, Bot.username
+        send_msg(username, cid, data['name'], data['address'],razdel,products, data['wish'], data["total_price"], bot_name, bot_username)
+        
     await state.finish()
+    await user_menu(message)

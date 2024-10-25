@@ -1,6 +1,9 @@
 from datetime import datetime
 from sqlite3 import connect
 
+import redis
+
+session = redis.StrictRedis(host='redis-db', port=6379, db=0, decode_responses=True)
 
 class DatabaseManager:
 
@@ -13,15 +16,17 @@ class DatabaseManager:
     def create_tables(self):
         self.query(
             'CREATE TABLE IF NOT EXISTS products (idx text primary key, title text, '
-            'body text, photo blob, price int, tag text)')
+            'body text, photo blob, price int, tag text, files text, file_names text, FOREIGN KEY(tag) REFERENCES categories(idx) ON DELETE CASCADE)')
         self.query(
             'CREATE TABLE IF NOT EXISTS orders (cid int, usr_name text, '
-            'usr_address text, products text)')
+            'usr_address text, products text, order_time timestamp, wish text, razdel text)')
         self.query(
             'CREATE TABLE IF NOT EXISTS cart (cid int, idx text, '
-            'quantity int)')
+            'quantity int, razdel text)')
         self.query(
-            'CREATE TABLE IF NOT EXISTS categories (idx text, title text)')
+            'CREATE TABLE IF NOT EXISTS categories (idx text primary key, title text, tag text, FOREIGN KEY(tag) REFERENCES razdels(idx) ON DELETE CASCADE)')
+        self.query(
+            'CREATE TABLE IF NOT EXISTS razdels (idx text primary key, title text)')
         self.query(
             'CREATE TABLE IF NOT EXISTS questions (cid int, question text)')
         self.query('''
@@ -37,7 +42,7 @@ class DatabaseManager:
             visit_id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER,
             visit_time TIMESTAMP,
-            FOREIGN KEY(user_id) REFERENCES users(user_id)
+            FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
         )
         ''')
 
@@ -47,8 +52,8 @@ class DatabaseManager:
             user_id INTEGER,
             product_id TEXT,
             view_time TIMESTAMP,
-            FOREIGN KEY(user_id) REFERENCES users(user_id),
-            FOREIGN KEY(product_id) REFERENCES products(idx)
+            FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            FOREIGN KEY(product_id) REFERENCES products(idx) ON DELETE CASCADE
         )
         ''')
         
@@ -58,10 +63,16 @@ class DatabaseManager:
             user_id INTEGER,
             categorie_id TEXT,
             view_time TIMESTAMP,
-            FOREIGN KEY(user_id) REFERENCES users(user_id),
-            FOREIGN KEY(categorie_id) REFERENCES categories(idx)
+            FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            FOREIGN KEY(categorie_id) REFERENCES categories(idx) ON DELETE CASCADE
         )
         ''')
+        self.query(
+            'CREATE TABLE IF NOT EXISTS sessions (session_id integer PRIMARY KEY AUTOINCREMENT, session_key text, pages_visited int)')
+        
+        self.query(
+            'CREATE TABLE IF NOT EXISTS abandoned_carts (user_id integer, time_checked timestamp)'
+        )
 
     def query(self, arg, values=None):
         if values is None:
@@ -93,8 +104,6 @@ class DatabaseManager:
         else:
             self.query("INSERT INTO product_buys (user_id, product_id, view_time) VALUES (?, ?, ?)", 
                 (user_id, product_id, datetime.now()))
-
-
 
     def __del__(self):
         self.conn.close()
