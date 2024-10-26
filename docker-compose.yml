@@ -9,7 +9,7 @@ services:
       - .:/
       - .:/data
     environment:
-      - DATABASE_PATH=./data/db.sqlite3
+      - DATABASE_PATH=./data/database.db
     ports:
       - "8000:8000"  # Пример порта, на котором будет работать твое приложение
     user: "1000:1000"
