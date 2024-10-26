@@ -59,7 +59,7 @@ async def add_razdel_callback_handler(query: CallbackQuery):
 async def set_razdel_title_handler(message: Message, state: FSMContext):
 
     razdel = message.text
-    idx = random.getrandbits(128)
+    idx = random.getrandbits(64)
     db.query('INSERT INTO razdels VALUES (?, ?)', (idx, razdel))
 
     await state.finish()
@@ -237,7 +237,7 @@ async def process_cancel(message: Message, state: FSMContext):
 async def process_title(message: Message, state: FSMContext):
     async with state.proxy() as data:
         razdel_id = data.get('razdel_id')
-    idx = str(random.getrandbits(128))
+    idx = str(random.getrandbits(64))
     db.query("INSERT INTO categories VALUES (?,?,?)", (idx,message.text,razdel_id,))
     await message.answer('Успешно добавлено!', reply_markup=ReplyKeyboardRemove())
     await state.finish()
