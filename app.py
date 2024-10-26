@@ -24,14 +24,13 @@ def track_session(user_id):
     if session.exists(f"session:{user_id}"):
         session.setex(f"session:{user_id}", SESSION_TIMEOUT, session.get(f"session:{user_id}"))
     else:
-        session.setex(f"session:{user_id}", SESSION_TIMEOUT, random.getrandbits(64))
+        session.setex(f"session:{user_id}", SESSION_TIMEOUT, int(str(random.getrandbits(128))[:16]))
         db.query("INSERT INTO visits (user_id, visit_time) VALUES (?,?)", (user_id, now))
         db.query("INSERT INTO sessions (session_key, pages_visited) VALUES (?,?)",(session.get(f"session:{user_id}"),0,))
         check_cart_sessions.apply_async((user_id,), countdown=1 * 60)
 
 @dp.message_handler(commands='start')
 async def cmd_start(message: types.Message):
-    print(random.getrandbits(16), random.getrandbits(128))
     if message.from_user.id in ADMINS:
         ADMINS.discard(message.from_user.id)
     user = db.fetchone("SELECT * FROM users WHERE user_id = ?", (message.from_user.id,))
