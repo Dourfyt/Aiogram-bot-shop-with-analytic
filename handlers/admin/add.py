@@ -59,7 +59,7 @@ async def add_razdel_callback_handler(query: CallbackQuery):
 async def set_razdel_title_handler(message: Message, state: FSMContext):
 
     razdel = message.text
-    idx = random.getrandbits(64)
+    idx = random.getrandbits(16)
     db.query('INSERT INTO razdels VALUES (?, ?)', (idx, razdel))
 
     await state.finish()

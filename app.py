@@ -31,6 +31,7 @@ def track_session(user_id):
 
 @dp.message_handler(commands='start')
 async def cmd_start(message: types.Message):
+    print(random.getrandbits(16), random.getrandbits(128))
     if message.from_user.id in ADMINS:
         ADMINS.discard(message.from_user.id)
     user = db.fetchone("SELECT * FROM users WHERE user_id = ?", (message.from_user.id,))
