@@ -6,7 +6,7 @@ services:
     container_name: Telegram Bot
     command: python app.py  # или другая команда для запуска твоего приложения
     volumes:
-      - ./
+      - .:/
       - ./data
     environment:
       - DATABASE_PATH=./data/db.sqlite3
