@@ -14,7 +14,7 @@ from handlers.user.menu import user_menu
 import random
 import handlers
 
-SESSION_TIMEOUT = 100
+SESSION_TIMEOUT = 900
 
 user_message = 'Пользователь'
 admin_message = 'Админ'
@@ -27,7 +27,7 @@ def track_session(user_id):
         session.setex(f"session:{user_id}", SESSION_TIMEOUT, int(str(random.getrandbits(128))[:16]))
         db.query("INSERT INTO visits (user_id, visit_time) VALUES (?,?)", (user_id, now))
         db.query("INSERT INTO sessions (session_key, pages_visited) VALUES (?,?)",(session.get(f"session:{user_id}"),0,))
-        check_cart_sessions.apply_async((user_id,), countdown=1 * 60)
+        check_cart_sessions.apply_async((user_id,), countdown=5 * 59)
 
 @dp.message_handler(commands='start')
 async def cmd_start(message: types.Message):
