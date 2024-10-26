@@ -21,3 +21,13 @@ services:
     container_name: redis-db
     ports:
       - "6379:6379"  # Порт Redis
+
+  celery_worker:
+    build: .
+    container_name: celery-worker
+    command: celery -A utils.tasks.tasks worker --loglevel=info
+    depends_on:
+      - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis-db:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis-db:6379/0
