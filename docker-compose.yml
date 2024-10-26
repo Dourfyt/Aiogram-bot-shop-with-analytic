@@ -7,8 +7,12 @@ services:
     command: python app.py  # или другая команда для запуска твоего приложения
     volumes:
       - .:/app
+      - ./data:/app/data
+    environment:
+      - DATABASE_PATH=/app/data/db.sqlite3
     ports:
       - "8000:8000"  # Пример порта, на котором будет работать твое приложение
+    user: "1000:1000"
     depends_on:
       - redis  # Указываем зависимость от Redis
 
