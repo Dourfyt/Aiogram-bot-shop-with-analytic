@@ -3,7 +3,6 @@ version: '3.8'
 services:
   app:
     build: .
-    container_name: TelegramBot
     command: python app.py
     volumes:
       - .:/app
@@ -18,13 +17,11 @@ services:
 
   redis:
     image: "redis:alpine"
-    container_name: redis-db
     ports:
       - "6380:6379"  # Порт Redis
 
   celery_worker:
     build: .
-    container_name: celery-worker
     command: celery -A utils.tasks.tasks worker --loglevel=info
     depends_on:
       - redis
