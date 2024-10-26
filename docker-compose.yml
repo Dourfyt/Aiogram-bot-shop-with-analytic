@@ -3,7 +3,7 @@ version: '3.8'
 services:
   app:
     build: .
-    container_name: Telegram Bot
+    container_name: TelegramBot
     command: python app.py  # или другая команда для запуска твоего приложения
     volumes:
       - .:/
