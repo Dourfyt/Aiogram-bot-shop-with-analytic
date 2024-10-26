@@ -20,7 +20,7 @@ services:
     image: "redis:alpine"
     container_name: redis-db
     ports:
-      - "6379:6379"  # Порт Redis
+      - "6380:6379"  # Порт Redis
 
   celery_worker:
     build: .
