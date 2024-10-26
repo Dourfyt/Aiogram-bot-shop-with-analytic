@@ -7,7 +7,7 @@ services:
     command: python app.py  # или другая команда для запуска твоего приложения
     volumes:
       - .:/
-      - ./data
+      - .:/data
     environment:
       - DATABASE_PATH=./data/db.sqlite3
     ports:
