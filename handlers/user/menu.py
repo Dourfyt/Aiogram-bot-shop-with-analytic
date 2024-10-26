@@ -20,7 +20,6 @@ config.read("data/config.ini")
 
 @dp.message_handler(commands='admin')
 async def admin_menu(message: Message):
-    print(config['BOT']["Admins"])
     admins = config['BOT']["Admins"].strip().split(",")
     if str(message.from_user.id) in admins:
         ADMINS.add(message.from_user.id)

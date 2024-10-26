@@ -11,6 +11,8 @@ WORKDIR /app
 COPY . /app
 
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
+RUN chmod 666 /app/data/database.db
+RUN chmod 777 /app/data
 USER appuser
 
 CMD ["python", "app.py"]

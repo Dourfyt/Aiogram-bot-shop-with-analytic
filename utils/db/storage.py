@@ -98,7 +98,6 @@ class DatabaseManager:
     def track_product_buy(self, user_id,product_id):
         product_exists = self.fetchone("SELECT * FROM products WHERE idx = ?", (product_id,))
         user_exists = self.fetchone("SELECT * FROM users WHERE user_id = ?", (user_id,))
-        print(product_exists[0], user_exists)
         if not product_exists or not user_exists:
             raise ValueError("Product or User does not exist")
         else:

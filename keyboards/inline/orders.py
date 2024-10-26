@@ -12,6 +12,5 @@ def delete_order_markup(cid, products,date):
         markup.add(InlineKeyboardButton("Удалить заказ",
                                         callback_data=order_cb.new(id=rowid,
                                                                       action='delete')))
-        print(rowid)
     return markup
 

@@ -368,7 +368,6 @@ async def process_confirm(message: Message, state: FSMContext):
             (data['category_index'],))[0]
         idx = md5(' '.join([title, body, price, tag]
                            ).encode('utf-8')).hexdigest()
-        print(tag)
         db.query('INSERT INTO products VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                  (idx, title, body, image, int(price), str(tag).strip(), files, file_names))
 
