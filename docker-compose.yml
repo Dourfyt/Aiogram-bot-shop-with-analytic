@@ -9,8 +9,7 @@ services:
       - .:/app
       - ./data:/app/data  # Монтируем папку data в контейнер
     environment:
-      - DATABASE_PATH=/app/data/database.db
-      - PORT=  # Путь к базе данных внутри контейнера
+      - DATABASE_PATH=/app/data/database.db  # Путь к базе данных внутри контейнера
     ports:
       - "8000:8000"  # Пример порта
     user: "1000:1000"
@@ -30,4 +29,5 @@ services:
     depends_on:
       - redis
     environment:
-      - PORT=
+      - CELERY_BROKER_URL=redis://redis-db:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis-db:6379/0
