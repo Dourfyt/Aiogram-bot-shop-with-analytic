@@ -4,17 +4,17 @@ services:
   app:
     build: .
     container_name: TelegramBot
-    command: python app.py  # или другая команда для запуска твоего приложения
+    command: python app.py
     volumes:
-      - .:/
-      - .:/data
+      - .:/app
+      - ./data:/app/data  # Монтируем папку data в контейнер
     environment:
-      - DATABASE_PATH=./data/database.db
+      - DATABASE_PATH=/app/data/database.db  # Путь к базе данных внутри контейнера
     ports:
-      - "8000:8000"  # Пример порта, на котором будет работать твое приложение
+      - "8000:8000"  # Пример порта
     user: "1000:1000"
     depends_on:
-      - redis  # Указываем зависимость от Redis
+      - redis
 
   redis:
     image: "redis:alpine"
