@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 
 from aiogram.dispatcher import FSMContext
 import redis
@@ -14,7 +15,7 @@ from keyboards.inline.categories import category_cb, razdel_cb
 from keyboards.inline.products_from_catalog import product_markup
 from keyboards.inline.products_from_catalog import product_cb, files_cb
 
-session = redis.StrictRedis(host='redis-db', port=6379, db=0, decode_responses=True)
+session = redis.StrictRedis(host='redis-db', port=os.environ['PORT'], db=0, decode_responses=True)
 @dp.callback_query_handler(IsUser(), razdel_cb.filter(action="view"))
 async def process_catalog(query: CallbackQuery, callback_data: dict, state: FSMContext):
     async with state.proxy() as data:

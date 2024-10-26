@@ -1,9 +1,10 @@
+import os
 from celery import Celery
 from datetime import datetime, timedelta
 from loader import session, db
 import logging
 
-app = Celery('tasks', broker='redis://redis-db:6379/0')
+app = Celery('tasks', broker=f'redis://redis-db:{os.environ['PORT']}/0')
 
 
 
