@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from aiogram.dispatcher import FSMContext
 import redis
@@ -15,6 +15,7 @@ from keyboards.inline.products_from_catalog import product_markup
 from keyboards.inline.products_from_catalog import product_cb, files_cb
 
 session = redis.StrictRedis(host='redis-db', port=6379, db=0, decode_responses=True)
+
 @dp.callback_query_handler(IsUser(), razdel_cb.filter(action="view"))
 async def process_catalog(query: CallbackQuery, callback_data: dict, state: FSMContext):
     async with state.proxy() as data:
@@ -32,7 +33,7 @@ async def razdel_callback_handler(message: Message):
 
 @dp.callback_query_handler(IsUser(), category_cb.filter(action='view'))
 async def category_callback_handler(query: CallbackQuery, callback_data: dict):
-    db.query("INSERT INTO categories_views (user_id,categorie_id,view_time) VALUES (?,?,?)",(query.from_user.id, callback_data['id'], datetime.now().isoformat(),))
+    db.query("INSERT INTO categories_views (user_id,categorie_id,view_time) VALUES (?,?,?)",(query.from_user.id, callback_data['id'], (datetime.now()-timedelta(days=4)).isoformat(),))
     if session.exists(f"session:{query.from_user.id}"):
         try:
             pages_visited = db.fetchone("SELECT pages_visited FROM sessions WHERE session_key = ?",(session.get(f"session:{query.from_user.id}"),))[0]
@@ -58,13 +59,16 @@ async def show_products(m, products):
 
         await bot.send_chat_action(m.chat.id, ChatActions.TYPING)
 
-        for idx, title, body, image, price, _, files, file_names in products:
+        for idx, title, body, image, price, _, files in products:
 
             markup = product_markup(idx, price)
             text = f'<b>{title}</b>\n\n{body}'
-            await m.answer_photo(photo=image,
-                                 caption=text,
-                                 reply_markup=markup)
+            if image != "":
+                await m.answer_photo(photo=image,
+                                    caption=text,
+                                    reply_markup=markup)
+            else:
+                await m.answer(text, reply_markup=markup) 
 
 #ДОБАВИТЬ ПРОДУКТ В КОРЗИНУ
 @dp.callback_query_handler(IsUser(), product_cb.filter(action='add'))
@@ -85,7 +89,7 @@ async def file_show_callback_handler(query: CallbackQuery,
                                        callback_data: dict, state: FSMContext):
         files = db.fetchone('''SELECT files FROM products WHERE idx = ?''', (callback_data['id'],))[0]
         prod_name = db.fetchone('''SELECT title FROM products WHERE idx = ?''', (callback_data['id'],))[0]
-        files = files.strip().rstrip('|||||').split("|||||")
+        files = files.strip().rstrip('|').split("|")
         await query.message.answer(f"{prod_name}:")
         for file in files:
-                await query.message.answer_document(file)
+            await query.message.answer_document(file)

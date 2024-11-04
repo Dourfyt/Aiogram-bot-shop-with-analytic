@@ -42,20 +42,25 @@ async def process_cart(message: Message, state: FSMContext):
                 db.query('DELETE FROM cart WHERE idx=?', (idx,))
 
             else:
-                _, title, body, image, price, _, _, _ = product
+                _, title, body, image, price, _, _ = product
                 order_cost += price
 
                 async with state.proxy() as data:
                     data['products'][idx] = [title, price, count_in_cart]
 
                 markup = product_markup(idx, count_in_cart)
-                text = f'<b>{title}</b>\n\n{body}\n\nЦена: {price}₽.'
+                if price != 0:
+                    text = f'<b>{title}</b>\n\n{body}\n\nЦена: {price} ₽'
+                else:
+                    text = f'<b>{title}</b>\n\n{body}\n\n'
 
-                await message.answer_photo(photo=image,
-                                           caption=text,
-                                           reply_markup=markup)
+                if image != "":
+                    await message.answer_photo(photo=image,
+                                        caption=text,
+                                        reply_markup=markup)
+                else:
+                    await message.answer(text, reply_markup=markup) 
 
-        if order_cost != 0:
             markup = ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
             markup.add('📦 Оформить заказ')
 
@@ -245,7 +250,7 @@ async def process_confirm(message: Message, state: FSMContext):
     markup = ReplyKeyboardRemove()
 
 
-    logging.info('Deal was made.')
+    logging.info('Совершен заказ.')
 
     async with state.proxy() as data:
         cid = message.chat.id

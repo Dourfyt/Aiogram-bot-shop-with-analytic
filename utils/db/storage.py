@@ -16,7 +16,7 @@ class DatabaseManager:
     def create_tables(self):
         self.query(
             'CREATE TABLE IF NOT EXISTS products (idx text primary key, title text, '
-            'body text, photo blob, price int, tag text, files text, file_names text, FOREIGN KEY(tag) REFERENCES categories(idx) ON DELETE CASCADE)')
+            'body text, photo blob null, price int null, tag text, files text, FOREIGN KEY(tag) REFERENCES categories(idx) ON DELETE CASCADE)')
         self.query(
             'CREATE TABLE IF NOT EXISTS orders (cid int, usr_name text, '
             'usr_address text, products text, order_time timestamp, wish text, razdel text)')

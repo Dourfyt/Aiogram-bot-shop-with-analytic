@@ -9,9 +9,14 @@ def product_markup(idx='', price=0):
     global product_cb
 
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton(f'Добавить в корзину - {price}₽',
-                                    callback_data=product_cb.new(id=idx,
-                                                                 action='add')))
+    if price != 0:
+        markup.add(InlineKeyboardButton(f'Добавить в корзину - {price}₽',
+                                        callback_data=product_cb.new(id=idx,
+                                                                    action='add')))
+    else:
+        markup.add(InlineKeyboardButton(f'Добавить в корзину',
+                                        callback_data=product_cb.new(id=idx,
+                                                                    action='add')))
     files = db.fetchone('''SELECT files FROM products WHERE idx = ?''', (idx,))[0]
     if files:
         markup.add(InlineKeyboardButton(f'Показать файлы',
@@ -34,5 +39,19 @@ def confirm_files_markup():
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton(f'Дальше',
                                     callback_data='confirm_files'))
+
+    return markup
+
+def confirm_photo_markup():
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton(f'Пропустить',
+                                    callback_data='confirm_photo'))
+
+    return markup
+
+def confirm_price_markup():
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton(f'Пропустить',
+                                    callback_data='confirm_price'))
 
     return markup

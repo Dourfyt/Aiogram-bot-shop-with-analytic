@@ -3,7 +3,8 @@ from aiogram import types
 from aiogram.types import ReplyKeyboardMarkup
 from aiogram.types import ReplyKeyboardRemove
 from aiogram import executor
-from logging import basicConfig, INFO
+import logging
+from aiogram.dispatcher import FSMContext
 import configparser
 
 from data.config import ADMINS
@@ -30,7 +31,8 @@ def track_session(user_id):
         check_cart_sessions.apply_async((user_id,), countdown=5 * 59)
 
 @dp.message_handler(commands='start')
-async def cmd_start(message: types.Message):
+async def cmd_start(message: types.Message, state: FSMContext):
+    await state.reset_state()
     if message.from_user.id in ADMINS:
         ADMINS.discard(message.from_user.id)
     user = db.fetchone("SELECT * FROM users WHERE user_id = ?", (message.from_user.id,))
@@ -48,8 +50,24 @@ async def cmd_start(message: types.Message):
 
 
 async def on_startup(dp):
-    basicConfig(level=INFO)
+    logger = logging.getLogger('simple_example')
+    logger.setLevel(logging.INFO)
+
+    # create console handler and set level to debug
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    logging.basicConfig(level=logging.INFO, filemode="w", filename='log.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+
+    # create formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # add formatter to ch
+    ch.setFormatter(formatter)
+
+    # add ch to logger
+    logger.addHandler(ch)
     db.create_tables()
+    
 
 
 if __name__ == '__main__':

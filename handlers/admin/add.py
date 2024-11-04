@@ -1,3 +1,4 @@
+import logging
 import random
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
@@ -15,14 +16,12 @@ from loader import bot
 from loader import dp, db
 from filters import IsAdmin
 from keyboards.default.markups import *
-from keyboards.inline.products_from_catalog import confirm_files_markup
+from keyboards.inline.products_from_catalog import confirm_files_markup, confirm_photo_markup, confirm_price_markup
 
+files_cb = CallbackData("product",'id', "action")
 razdel_cb = CallbackData('razdel', 'id', 'action')
 category_cb = CallbackData('category', 'id', 'action')
 product_cb = CallbackData('product', 'id', 'action')
-
-files = []
-file_names = []
 
 delete_category = '🗑️ Удалить категорию'
 rename_category = "Изменить название категории"
@@ -69,33 +68,37 @@ async def set_razdel_title_handler(message: Message, state: FSMContext):
 @dp.callback_query_handler(IsAdmin(), razdel_cb.filter(action='view'))
 async def category_callback_handler(query: CallbackQuery, callback_data: dict,
                                     state: FSMContext):
-    razdel_idx = callback_data['id']
-    async with state.proxy() as data:
-        data["razdel_id"] = razdel_idx
+    try:
+        razdel_idx = callback_data['id']
+        async with state.proxy() as data:
+            data["razdel_id"] = razdel_idx
 
-    products = db.fetchall('''SELECT categories.idx, categories.title 
-                        FROM categories 
-                        WHERE categories.tag = ?;
-                        ''',
-                           (razdel_idx,))
-    markup = InlineKeyboardMarkup()
+        products = db.fetchall('''SELECT categories.idx, categories.title 
+                            FROM categories 
+                            WHERE categories.tag = ?;
+                            ''',
+                            (razdel_idx,))
+        markup = InlineKeyboardMarkup()
 
-    for idx, title in products:
+        for idx, title in products:
+
+            markup.add(InlineKeyboardButton(
+                title, callback_data=category_cb.new(id=idx, action='view')))
 
         markup.add(InlineKeyboardButton(
-            title, callback_data=category_cb.new(id=idx, action='view')))
+            '+ Добавить категорию', callback_data='add_category_to_razdels'))
+        
+        reply =  ReplyKeyboardMarkup()
+        reply.add(delete_razdel)
+        reply.add(rename_razdel)
 
-    markup.add(InlineKeyboardButton(
-        '+ Добавить категорию', callback_data='add_category_to_razdels'))
-    
-    reply =  ReplyKeyboardMarkup()
-    reply.add(delete_razdel)
-    reply.add(rename_razdel)
-
-    await query.message.delete()
-    await query.message.answer('Все категории этого раздела.', reply_markup=markup)
-    await query.message.answer('Хотите что-нибудь добавить или удалить?', reply_markup=reply)
-    await state.update_data(razdel_index=razdel_idx)
+        await query.message.delete()
+        await query.message.answer('Все категории этого раздела.', reply_markup=markup)
+        await query.message.answer('Хотите что-нибудь добавить или удалить?', reply_markup=reply)
+        await state.update_data(razdel_index=razdel_idx)
+    except Exception as e:
+        logging.error(f"{e}")
+        
 
 #ПОКАЗЫВАЕТ ТОВАРЫ
 @dp.callback_query_handler(IsAdmin(), category_cb.filter(action='view'))
@@ -117,21 +120,27 @@ async def category_callback_handler(query: CallbackQuery, callback_data: dict,
 async def show_products(m, products, category_idx):
     await bot.send_chat_action(m.chat.id, ChatActions.TYPING)
     try:
-        for idx, title, body, image, price, tag, files, file_names in products:
-            text = f'<b>{title}</b>\n\n{body}\n\nЦена: {price} рублей.'
+        for idx, title, body, image, price, tag, files in products:
+            
+            if price != 0:
+                text = f'<b>{title}</b>\n\n{body}\n\nЦена: {price} ₽'
+            else:
+                text = f'<b>{title}</b>\n\n{body}\n\n'
 
             markup = InlineKeyboardMarkup()
             markup.add(InlineKeyboardButton(
                 '🗑️ Удалить',
                 callback_data=product_cb.new(id=idx, action='delete')))
-
-            await m.answer_photo(photo=image,
-                                caption=text,
-                                reply_markup=markup)
-            files = files.strip().rstrip('|||||').split("|||||")
-            file_names = file_names.strip().rstrip(',').split(",")
-            for file in files:
-                await m.answer_document(file)
+            if files:
+                markup.add(InlineKeyboardButton(f'Показать файлы',
+                                        callback_data=product_cb.new(id=idx,
+                                                                    action='show')))
+            if image != "":
+                await m.answer_photo(photo=image,
+                                    caption=text,
+                                    reply_markup=markup)
+            else:
+                await m.answer(text, reply_markup=markup) 
     except:
         pass
 
@@ -143,6 +152,16 @@ async def show_products(m, products, category_idx):
     await m.answer('Хотите что-нибудь добавить или удалить?',
                    reply_markup=markup)
 
+#ПОКАЗЫВАЕТ ФАЙЛЫ
+@dp.callback_query_handler(IsAdmin(), files_cb.filter(action='show'))
+async def file_show_callback_handler(query: CallbackQuery,
+                                       callback_data: dict, state: FSMContext):
+        files = db.fetchone('''SELECT files FROM products WHERE idx = ?''', (callback_data['id'],))[0]
+        prod_name = db.fetchone('''SELECT title FROM products WHERE idx = ?''', (callback_data['id'],))[0]
+        files = files.strip().rstrip('|').split("|")
+        await query.message.answer(f"{prod_name}:")
+        for file in files:
+            await query.message.answer_document(file)
 
 #УДАЛЯЕТ РАЗДЕЛ
 @dp.message_handler(IsAdmin(), text=delete_razdel)
@@ -289,7 +308,16 @@ async def process_body(message: Message, state: FSMContext):
         data['body'] = message.text
 
     await ProductState.next()
-    await message.answer('Фото?', reply_markup=back_markup())
+    await message.answer('Фото?', reply_markup=confirm_photo_markup())
+
+#ПРОПУСКАЕТ ФОТО, ПРОСИТ ФАЙЛ
+@dp.callback_query_handler(IsAdmin(), text='confirm_photo', state=ProductState.image)
+async def confirm_process_photo(query : CallbackQuery,  state: FSMContext):
+    async with state.proxy() as data:
+        data['image'] = ""
+        data['files'] = []
+    await ProductState.next()
+    await query.message.answer('Пришлите по одному файлу для прикрепления или нажмите кнопку "Дальше"', reply_markup=confirm_files_markup())
 
 #ПОЛУЧАЕТ ФОТО, ПРОСИТ ФАЙЛ
 @dp.message_handler(IsAdmin(), content_types=ContentType.PHOTO,
@@ -303,28 +331,24 @@ async def process_image_photo(message: Message, state: FSMContext):
         data['image'] = downloaded_file
 
     await ProductState.next()
-    await message.answer('Пришлите по одному файлу для прикрепления или нажмите кнопку "Дальше"', reply_markup=confirm_files_markup())
+    await message.answer('Пришлите файлы для прикрепления или нажмите кнопку "Дальше"', reply_markup=confirm_files_markup())
 
 #ПОЛУЧАЕТ ФАЙЛ И ПРОСИТ ЕЩЕ
 @dp.message_handler(IsAdmin(), content_types=ContentType.DOCUMENT,
                     state=ProductState.files)
 async def process_files(message: Message, state: FSMContext):
     fileID = message.document.file_id
-    fileNAME = message.document.file_name
-    file_info = await bot.get_file(fileID)
-    downloaded_file = (await bot.download_file(file_info.file_path)).read()
-    files.append(fileID)
-    file_names.append(fileNAME)
+    async with state.proxy() as data:
+        if 'files' not in data:
+            data['files'] = []
+        data['files'].append(fileID)
     await message.answer('Это все файлы? Если нет, пришлите еще', reply_markup=confirm_files_markup())
 
 #СОХРАНЯЕТ ФАЙЛ И ПРОСИТ ЦЕНУ
 @dp.callback_query_handler(IsAdmin(), text='confirm_files', state=ProductState.files)
 async def confirm_process_files(query : CallbackQuery,  state: FSMContext):
     await ProductState.next()
-    async with state.proxy() as data:
-        data['files'] = files
-        data['file_names'] = file_names
-    await query.message.answer("Цена?")
+    await query.message.answer("Цена?", reply_markup=confirm_price_markup())
 
 #СОХРАНЯЕТ ЦЕНУ И ВЫВОДИТ ПРЕДПРОСМОТР ТОВАРА
 @dp.message_handler(IsAdmin(), lambda message: message.text.isdigit(),
@@ -337,19 +361,49 @@ async def process_price(message: Message, state: FSMContext):
         body = data['body']
         price = data['price']
         files = data['files']
-        file_names = data['file_names']
 
         await ProductState.next()
         text = f'<b>{title}</b>\n\n{body}\n\nЦена: {price} рублей.'
 
         markup = check_markup()
-
-        await message.answer_photo(photo=data['image'],
+        if data['image'] != "":
+            await message.answer_photo(photo=data['image'],
                                    caption=text,
                                    reply_markup=markup)
-        for file in files:
-            for name in file_names:
-                await message.answer_document(file, caption=name)
+        else:
+            await message.answer(text, reply_markup=markup)
+        if files != "":
+            for file in files:
+                await message.answer_document(file)
+        else:
+            pass
+
+#ПРОПУСКАЕТ ЦЕНУ И ВЫВОДИТ ПРЕДПРОСМОТР ТОВАРА
+@dp.callback_query_handler(IsAdmin(), text='confirm_price',
+                    state=ProductState.price)
+async def process_price(query: CallbackQuery, state: FSMContext):
+    async with state.proxy() as data:
+        data['price'] = "0"
+
+        title = data['title']
+        body = data['body']
+        files = data['files']
+
+        await ProductState.next()
+        text = f'<b>{title}</b>\n\n{body}\n\n'
+
+        markup = check_markup()
+        if data['image'] != "":
+            await query.message.answer_photo(photo=data['image'],
+                                   caption=text,
+                                   reply_markup=markup)
+        else:
+            await query.message.answer(text, reply_markup=markup)
+        if files != "":
+            for file in files:
+                await query.message.answer_document(file)
+        else:
+            pass
 
 #СОХРАНЯЕТ ТОВАР В БД
 @dp.message_handler(IsAdmin(), text=all_right_message,
@@ -360,17 +414,15 @@ async def process_confirm(message: Message, state: FSMContext):
         body = data['body']
         image = data['image']
         price = data['price']
-        files = ''.join([f"{file}|||||" for file in data['files']])
-        file_names = ''.join([f"{file}," for file in data['file_names']])
+        files = ''.join([f"{file}|" for file in data['files']])
 
         tag = db.fetchone(
             'SELECT idx FROM categories WHERE idx=?',
             (data['category_index'],))[0]
         idx = md5(' '.join([title, body, price, tag]
                            ).encode('utf-8')).hexdigest()
-        db.query('INSERT INTO products VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                 (idx, title, body, image, int(price), str(tag).strip(), files, file_names))
-
+        db.query('INSERT INTO products VALUES (?, ?, ?, ?, ?, ?, ?)',
+                 (idx, title, body, image, int(price), str(tag).strip(), files))
     await state.finish()
     await message.answer('Готово!', reply_markup=ReplyKeyboardRemove())
     await process_settings(message)

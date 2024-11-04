@@ -10,7 +10,7 @@ services:
     environment:
       - DATABASE_PATH=/app/data/database.db  # Путь к базе данных внутри контейнера
     ports:
-      - "8000:8000"  # Пример порта
+      - "$PORT:8000"  # Пример порта
     user: "1000:1000"
     depends_on:
       - redis
@@ -18,13 +18,10 @@ services:
   redis:
     image: "redis:alpine"
     ports:
-      - "6380:6379"  # Порт Redis
+      - "$PORT:6379"  # Порт Redis
 
   celery_worker:
     build: .
     command: celery -A utils.tasks.tasks worker --loglevel=info
     depends_on:
       - redis
-    environment:
-      - CELERY_BROKER_URL=redis://redis-db:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis-db:6379/0
