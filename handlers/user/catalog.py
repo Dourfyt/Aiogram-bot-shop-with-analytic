@@ -14,7 +14,9 @@ from keyboards.inline.categories import category_cb, razdel_cb
 from keyboards.inline.products_from_catalog import product_markup
 from keyboards.inline.products_from_catalog import product_cb, files_cb
 
-session = redis.StrictRedis(host='redis', port=6379, db=0, decode_responses=True)
+import os
+session = redis.StrictRedis(host=os.getenv("REDIS_HOST", "redis"), port=6379, db=0, decode_responses=True)
+
 
 @dp.callback_query_handler(IsUser(), razdel_cb.filter(action="view"))
 async def process_catalog(query: CallbackQuery, callback_data: dict, state: FSMContext):

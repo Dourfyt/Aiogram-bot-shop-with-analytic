@@ -1,9 +1,9 @@
 from datetime import datetime
 from sqlite3 import connect
-
+import os
 import redis
 
-session = redis.StrictRedis(host='redis', port=6379, db=0, decode_responses=True)
+session = redis.StrictRedis(host=os.getenv("REDIS_HOST", "redis"), port=6379, db=0, decode_responses=True)
 
 class DatabaseManager:
 

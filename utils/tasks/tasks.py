@@ -2,8 +2,9 @@ from celery import Celery
 from datetime import datetime, timedelta
 from loader import session, db
 import logging
+import os
 
-app = Celery('tasks', broker='redis://redis:6379/0')
+app = Celery('tasks', broker=f'redis://{os.getenv("REDIS_HOST", "redis")}:6379/0')
 
 
 
