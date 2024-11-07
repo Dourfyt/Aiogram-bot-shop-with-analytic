@@ -8,6 +8,7 @@ services:
       - .:/app
       - ./data:/app/data  # Монтируем папку data в контейнер
     environment:
+      - MPLCONFIGDIR=/tmp
       - DATABASE_PATH=/app/data/database.db  # Путь к базе данных внутри контейнера
     ports:
       - "$PORT:8000"  # Пример порта

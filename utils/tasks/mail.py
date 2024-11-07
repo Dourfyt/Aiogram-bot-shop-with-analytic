@@ -32,7 +32,7 @@ def send_msg(username: str, cid: int, name:str, address:str, razdels:list, produ
                 ИНФОРМАЦИЯ О ТОВАРЕ:
                 Раздел: {razdel}
                 Товар: {res}
-                Общая сумма заказа: {summa}₽.
+                Общая сумма заказа: {summa} ₽.
                 Сообщение: {wish}
                 
                 - ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ: 

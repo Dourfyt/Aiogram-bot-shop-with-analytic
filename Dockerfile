@@ -6,13 +6,13 @@ ENV PYTHONUNBUFFERED=1
 
 COPY requirements.txt .
 RUN python -m pip install -r requirements.txt
+RUN useradd -ms /bin/bash admin
 
 WORKDIR /app
 COPY . /app
 
-RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
-RUN chmod 666 /app/data/database.db
-RUN chmod 777 /app/data
-USER appuser
+RUN chown -R admin:admin /app
+RUN chmod 755 /app
+USER admin
 
 CMD ["python", "app.py"]

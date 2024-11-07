@@ -3,7 +3,7 @@ from sqlite3 import connect
 
 import redis
 
-session = redis.StrictRedis(host='redis-db', port=6379, db=0, decode_responses=True)
+session = redis.StrictRedis(host='redis', port=6379, db=0, decode_responses=True)
 
 class DatabaseManager:
 

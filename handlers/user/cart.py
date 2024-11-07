@@ -133,11 +133,11 @@ async def checkout(message, state):
         for title, price, count_in_cart in data['products'].values():
 
             tp = count_in_cart * price
-            answer += f'<b>{title}</b> * {count_in_cart}шт. = {tp}₽\n'
+            answer += f'<b>{title}</b> * {count_in_cart}шт. = {tp} ₽\n'
             total_price += tp
         data['total_price'] = total_price
 
-    await message.answer(f'{answer}\nОбщая сумма заказа: {total_price}₽.',
+    await message.answer(f'{answer}\nОбщая сумма заказа: {total_price} ₽.',
                          reply_markup=check_markup())
 
 

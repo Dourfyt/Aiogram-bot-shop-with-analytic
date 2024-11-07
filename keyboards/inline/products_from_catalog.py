@@ -10,7 +10,7 @@ def product_markup(idx='', price=0):
 
     markup = InlineKeyboardMarkup()
     if price != 0:
-        markup.add(InlineKeyboardButton(f'Добавить в корзину - {price}₽',
+        markup.add(InlineKeyboardButton(f'Добавить в корзину - {price} ₽',
                                         callback_data=product_cb.new(id=idx,
                                                                     action='add')))
     else:

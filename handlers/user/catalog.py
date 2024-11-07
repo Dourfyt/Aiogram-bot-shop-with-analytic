@@ -14,7 +14,7 @@ from keyboards.inline.categories import category_cb, razdel_cb
 from keyboards.inline.products_from_catalog import product_markup
 from keyboards.inline.products_from_catalog import product_cb, files_cb
 
-session = redis.StrictRedis(host='redis-db', port=6379, db=0, decode_responses=True)
+session = redis.StrictRedis(host='redis', port=6379, db=0, decode_responses=True)
 
 @dp.callback_query_handler(IsUser(), razdel_cb.filter(action="view"))
 async def process_catalog(query: CallbackQuery, callback_data: dict, state: FSMContext):
@@ -44,7 +44,7 @@ async def category_callback_handler(query: CallbackQuery, callback_data: dict):
     AND idx NOT IN (SELECT idx FROM cart WHERE cid = ?)''',
                            (callback_data['id'], query.message.chat.id))
     await query.message.delete()
-    await query.message.answer('Для того, чтобы сделать заказ: выберите страховой продукт, положите в корзину и нажмите отправить. Страховой агент свяжется с Вами')
+    await query.message.answer('Для того, чтобы сделать заказ: выберите страховой продукт, положите в корзину и нажмите отправить. Представитель страховой компании свяжется с Вами')
     await show_products(query.message, products)
 
 
